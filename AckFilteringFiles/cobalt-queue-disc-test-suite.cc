@@ -30,6 +30,7 @@
 #include "ns3/double.h"
 #include "ns3/log.h"
 #include "ns3/simulator.h"
+#include "ns3/queue.h"
 
 using namespace ns3;
 /**
@@ -325,6 +326,83 @@ CobaltQueueDiscDropTest::DoRun (void)
   Simulator::Destroy ();
 }
 
+
+class CobaltBasicSynAckTest : public TestCase
+{
+public:
+  /**
+   * Constructor
+   *
+   * \param mode the mode
+   */
+  CobaltBasicSynAckTest (QueueSizeUnit mode);
+  virtual void DoRun (void);
+
+  /**
+   * Queue test size function
+   * \param queue the queue disc
+   * \param size the size
+   * \param error the error string
+   *
+   */
+
+private:
+  QueueSizeUnit m_mode; ///< mode
+};
+
+CobaltBasicSynAckTest::CobaltBasicSynAckTest (QueueSizeUnit mode)
+  : TestCase ("Basic enqueue and dequeue operations with ack filtering, and attribute setting" + std::to_string (mode))
+{
+  m_mode = mode;
+}
+
+void
+CobaltBasicSynAckTest::DoRun (void)
+{
+  Ptr<CobaltQueueDisc> queue = CreateObject<CobaltQueueDisc> ();
+
+  uint32_t pktSize = 1000;
+  uint32_t modeSize = 0;
+
+  Address dest;
+
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("MinBytes", UintegerValue (pktSize)), true,
+                         "Verify that we can actually set the attribute MinBytes");
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("Interval", StringValue ("50ms")), true,
+                         "Verify that we can actually set the attribute Interval");
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("Target", StringValue ("4ms")), true,
+                         "Verify that we can actually set the attribute Target");
+
+  if (m_mode == QueueSizeUnit::BYTES)
+    {
+      modeSize = pktSize;
+    }
+  else if (m_mode == QueueSizeUnit::PACKETS)
+    {
+      modeSize = 1;
+    }
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("MaxSize", QueueSizeValue (QueueSize (m_mode, modeSize * 1500))),
+                         true, "Verify that we can actually set the attribute MaxSize");
+  queue->Initialize ();
+  TcpHeader tcpHdr;
+  uint8_t flags =TcpHeader::SYN;
+  tcpHdr.SetFlags (flags);
+
+  Ptr<Packet> p1, p2;
+  p1 = Create<Packet> (pktSize);
+  p1->AddHeader(tcpHdr);
+  flags|=TcpHeader::ACK;
+  p2 = Create<Packet> (pktSize);
+  p2->AddHeader(tcpHdr);
+
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 0 * modeSize, "There should be no packets in queue");
+  queue->Enqueue (Create<CobaltQueueDiscTestItem> (p1, dest,0, false));
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 1 * modeSize, "There should be one packet in queue");
+  queue->Enqueue (Create<CobaltQueueDiscTestItem> (p2, dest,0, false));
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 2 * modeSize, "There should be two packet in queue");
+  }
+
+
 static class CobaltQueueDiscTestSuite : public TestSuite
 {
 public:
@@ -336,5 +414,7 @@ public:
     AddTestCase (new CobaltQueueDiscBasicEnqueueDequeue (BYTES), TestCase::QUICK);
     // Test 2: Drop test
     AddTestCase (new CobaltQueueDiscDropTest (), TestCase::QUICK);
+    // Test 3: Drop test
+    AddTestCase (new CobaltBasicSynAckTest (PACKETS), TestCase::QUICK);
   }
 } g_cobaltQueueTestSuite; ///< the test suite

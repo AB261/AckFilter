@@ -33,6 +33,7 @@
 #include "ns3/object-factory.h"
 #include "ns3/drop-tail-queue.h"
 #include "ns3/net-device-queue-interface.h"
+#include "ns3/ack-filter.h"
 #include <climits>
 
 
@@ -340,7 +341,9 @@ CobaltQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
     }
 
   bool retval = GetInternalQueue (0)->Enqueue (item);
-
+  Ptr<Queue<QueueDiscItem>> queue = GetInternalQueue (0);
+  AckFilter ack;
+  ack.AckFilterMain(queue);
   // If Queue::Enqueue fails, QueueDisc::Drop is called by the internal queue
   // because QueueDisc::AddInternalQueue sets the drop callback
 
