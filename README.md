@@ -34,3 +34,10 @@
 NS_LOG="FifoQueueDisc" ./waf --run "test-runner --suite=fifo-queue-disc"
 NS_LOG="FifoQueueDisc" ./waf --run dumbbell
 ```
+
+Test 3: This test is designed to verify the basic functionality of TCP ACK Filter.
+We enqueued first a TCP packet with only ACK Flag enabled and some sequence
+number, then we enqueued one TCP Packet with only ACK Flag enabled and
+higher sequence number. The packet at HEAD of the queue will be dropped
+since the loss of this ACK will not result in any information loss at TCP Sender
+Side.
