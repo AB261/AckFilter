@@ -402,6 +402,175 @@ CobaltBasicSynAckTest::DoRun (void)
   NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 2 * modeSize, "There should be two packet in queue");
   }
 
+  /**
+   * This is Test Case 1 : Enqueue UDP Packets and check if they are getting dropped
+   * No packets should be dropped as Ack Filtering is only for TCP Packets.
+   */
+
+class AckFilterUdpEnqueueTest : public TestCase
+{
+public:
+  /**
+   * Constructor
+   *
+   * \param mode the mode
+   */
+  AckFilterUdpEnqueueTest (QueueSizeUnit mode);
+  virtual void DoRun (void);
+
+  /**
+   * Queue test size function
+   * \param queue the queue disc
+   * \param size the size
+   * \param error the error string
+   *
+   */
+
+private:
+  QueueSizeUnit m_mode; ///< mode
+};
+
+AckFilterUdpEnqueueTest::AckFilterUdpEnqueueTest (QueueSizeUnit mode)
+  : TestCase ("Basic enqueue operations of UDP Packets with ack filtering, and attribute setting" + std::to_string (mode))
+{
+  m_mode = mode;
+}
+
+void
+AckFilterUdpEnqueueTest::DoRun (void)
+{
+  Ptr<CobaltQueueDisc> queue = CreateObject<CobaltQueueDisc> ();
+
+  uint32_t pktSize = 1000;
+  uint32_t modeSize = 0;
+
+  Address dest;
+
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("MinBytes", UintegerValue (pktSize)), true,
+                         "Verify that we can actually set the attribute MinBytes");
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("Interval", StringValue ("50ms")), true,
+                         "Verify that we can actually set the attribute Interval");
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("Target", StringValue ("4ms")), true,
+                         "Verify that we can actually set the attribute Target");
+
+  if (m_mode == QueueSizeUnit::BYTES)
+    {
+      modeSize = pktSize;
+    }
+  else if (m_mode == QueueSizeUnit::PACKETS)
+    {
+      modeSize = 1;
+    }
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("MaxSize", QueueSizeValue (QueueSize (m_mode, modeSize * 1500))),
+                         true, "Verify that we can actually set the attribute MaxSize");
+  queue->Initialize ();
+
+  UdpHeader udpHdr;
+
+  Ptr<Packet> p1, p2;
+  p1 = Create<Packet> (pktSize);
+  p1->AddHeader(udpHdr);
+  p2 = Create<Packet> (pktSize);
+  p2->AddHeader(udpHdr);
+
+
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 0 * modeSize, "There should be no packets in queue");
+  queue->Enqueue (Create<CobaltQueueDiscTestItem> (p1, dest,0, false));
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 1 * modeSize, "There should be one packet in queue");
+  queue->Enqueue (Create<CobaltQueueDiscTestItem> (p2, dest,0, false));
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 2 * modeSize, "There should be two packet in queue, two packets means it wasnt dropped");
+  }
+
+
+  /**
+   * This is Test Case 7 : Enqueue pkt with urg flag and then check if its being dropped
+   * because of another ack of higher number.
+   */
+
+class AckFilterUrgFlagTest : public TestCase
+{
+public:
+  /**
+   * Constructor
+   *
+   * \param mode the mode
+   */
+  AckFilterUrgFlagTest (QueueSizeUnit mode);
+  virtual void DoRun (void);
+
+  /**
+   * Queue test size function
+   * \param queue the queue disc
+   * \param size the size
+   * \param error the error string
+   *
+   */
+
+private:
+  QueueSizeUnit m_mode; ///< mode
+};
+
+AckFilterUrgFlagTest::AckFilterUrgFlagTest (QueueSizeUnit mode)
+  : TestCase ("URG Flag enabled packets check with ack filtering, and attribute setting" + std::to_string (mode))
+{
+  m_mode = mode;
+}
+
+void
+AckFilterUrgFlagTest::DoRun (void)
+{
+  Ptr<CobaltQueueDisc> queue = CreateObject<CobaltQueueDisc> ();
+
+  uint32_t pktSize = 1000;
+  uint32_t modeSize = 0;
+
+  Address dest;
+
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("MinBytes", UintegerValue (pktSize)), true,
+                         "Verify that we can actually set the attribute MinBytes");
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("Interval", StringValue ("50ms")), true,
+                         "Verify that we can actually set the attribute Interval");
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("Target", StringValue ("4ms")), true,
+                         "Verify that we can actually set the attribute Target");
+
+  if (m_mode == QueueSizeUnit::BYTES)
+    {
+      modeSize = pktSize;
+    }
+  else if (m_mode == QueueSizeUnit::PACKETS)
+    {
+      modeSize = 1;
+    }
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("MaxSize", QueueSizeValue (QueueSize (m_mode, modeSize * 1500))),
+                         true, "Verify that we can actually set the attribute MaxSize");
+  queue->Initialize ();
+
+  TcpHeader tcpHdr1;
+  uint8_t flags1 =TcpHeader::ACK|TcpHeader::URG;
+  tcpHdr1.SetFlags (flags1);
+  SequenceNumber32 num1 (1);
+  tcpHdr.SetAckNumber (num1);
+
+  TcpHeader tcpHdr2;
+  uint8_t flags2 =TcpHeader::ACK;
+  tcpHdr2.SetFlags (flags2);
+  SequenceNumber32 num2 (1501);
+  tcpHdr2.SetAckNumber (num2);
+
+  Ptr<Packet> p1, p2;
+  p1 = Create<Packet> (pktSize);
+  p1->AddHeader(tcpHdr1);
+  p2 = Create<Packet> (pktSize);
+  p2->AddHeader(tcpHdr2);
+
+
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 0 * modeSize, "There should be no packets in queue");
+  queue->Enqueue (Create<CobaltQueueDiscTestItem> (p1, dest,0, false));
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 1 * modeSize, "There should be one packet in queue");
+  queue->Enqueue (Create<CobaltQueueDiscTestItem> (p2, dest,0, false));
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 2 * modeSize, "There should be two packet in queue, two packets means it wasnt dropped");
+  }
+
 
 static class CobaltQueueDiscTestSuite : public TestSuite
 {
@@ -416,5 +585,8 @@ public:
     AddTestCase (new CobaltQueueDiscDropTest (), TestCase::QUICK);
     // Test 3: Drop test
     AddTestCase (new CobaltBasicSynAckTest (PACKETS), TestCase::QUICK);
+    AddTestCase (new AckFilterUdpEnqueueTest(PACKETS), TestCase::QUICK);
+    AddTestCase (new AckFilterUrgFlagTest(PACKETS), TestCase::QUICK);
+     
   }
 } g_cobaltQueueTestSuite; ///< the test suite
