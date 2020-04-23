@@ -483,6 +483,187 @@ AckFilterUdpEnqueueTest::DoRun (void)
 
 
   /**
+   * This is Test Case 4 : Enqueue pkt with ece, cwr flag and then check that it's being dropped
+   * because of another ack (also with ece, cwr) of higher number.
+   */
+
+class AckFilterEceCwrFlagTest : public TestCase
+{
+public:
+  /**
+   * Constructor
+   *
+   * \param mode the mode
+   */
+  AckFilterEceCwrFlagTest (QueueSizeUnit mode);
+  virtual void DoRun (void);
+
+  /**
+   * Queue test size function
+   * \param queue the queue disc
+   * \param size the size
+   * \param error the error string
+   *
+   */
+
+private:
+  QueueSizeUnit m_mode; ///< mode
+};
+
+AckFilterEceCwrFlagTest::AckFilterEceCwrFlagTest (QueueSizeUnit mode)
+  : TestCase ("ECE, CWR Flag enabled packets check with ack filtering, and attribute setting" + std::to_string (mode))
+{
+  m_mode = mode;
+}
+
+void
+AckFilterEceCwrFlagTest::DoRun (void)
+{
+  Ptr<CobaltQueueDisc> queue = CreateObject<CobaltQueueDisc> ();
+
+  uint32_t pktSize = 1000;
+  uint32_t modeSize = 0;
+
+  Address dest;
+
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("MinBytes", UintegerValue (pktSize)), true,
+                         "Verify that we can actually set the attribute MinBytes");
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("Interval", StringValue ("50ms")), true,
+                         "Verify that we can actually set the attribute Interval");
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("Target", StringValue ("4ms")), true,
+                         "Verify that we can actually set the attribute Target");
+
+  if (m_mode == QueueSizeUnit::BYTES)
+    {
+      modeSize = pktSize;
+    }
+  else if (m_mode == QueueSizeUnit::PACKETS)
+    {
+      modeSize = 1;
+    }
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("MaxSize", QueueSizeValue (QueueSize (m_mode, modeSize * 1500))),
+                         true, "Verify that we can actually set the attribute MaxSize");
+  queue->Initialize ();
+
+  TcpHeader tcpHdr1;
+  uint8_t flags1 =TcpHeader::ACK|TcpHeader::ECE|TcpHeader::CWR;
+  tcpHdr1.SetFlags (flags1);
+  SequenceNumber32 num1 (1);
+  tcpHdr1.SetAckNumber (num1);
+
+  TcpHeader tcpHdr2;
+  uint8_t flags2 =TcpHeader::ACK|TcpHeader::ECE|TcpHeader::CWR;
+  tcpHdr2.SetFlags (flags2);
+  SequenceNumber32 num2 (1501);
+  tcpHdr2.SetAckNumber (num2);
+
+  Ptr<Packet> p1, p2;
+  p1 = Create<Packet> (pktSize);
+  p1->AddHeader(tcpHdr1);
+  p2 = Create<Packet> (pktSize);
+  p2->AddHeader(tcpHdr2);
+
+
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 0 * modeSize, "There should be no packets in queue");
+  queue->Enqueue (Create<CobaltQueueDiscTestItem> (p1, dest,0, false));
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 1 * modeSize, "There should be one packet in queue");
+  queue->Enqueue (Create<CobaltQueueDiscTestItem> (p2, dest,0, false));
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 1 * modeSize, "There should be one packet in queue, the first packet was dropped");
+  }
+
+
+  /**
+   * This is Test Case 5 : Enqueue pkt with ece, cwr flag and SACK_PERMITTED enabled. Then check that it isn't being dropped
+   * because of another ack (also with ece, cwr) of higher number.
+   */
+
+class AckFilterSackPermittedTest : public TestCase
+{
+public:
+  /**
+   * Constructor
+   *
+   * \param mode the mode
+   */
+  AckFilterSackPermittedTest (QueueSizeUnit mode);
+  virtual void DoRun (void);
+
+  /**
+   * Queue test size function
+   * \param queue the queue disc
+   * \param size the size
+   * \param error the error string
+   *
+   */
+
+private:
+  QueueSizeUnit m_mode; ///< mode
+};
+
+AckFilterSackPermittedTest::AckFilterSackPermittedTest (QueueSizeUnit mode)
+  : TestCase ("ECE, CWR Flag and SACK_PERMITTED enabled packets check with ack filtering, and attribute setting" + std::to_string (mode))
+{
+  m_mode = mode;
+}
+
+void
+AckFilterSackPermittedTest::DoRun (void)
+{
+  Ptr<CobaltQueueDisc> queue = CreateObject<CobaltQueueDisc> ();
+
+  uint32_t pktSize = 1000;
+  uint32_t modeSize = 0;
+
+  Address dest;
+
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("MinBytes", UintegerValue (pktSize)), true,
+                         "Verify that we can actually set the attribute MinBytes");
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("Interval", StringValue ("50ms")), true,
+                         "Verify that we can actually set the attribute Interval");
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("Target", StringValue ("4ms")), true,
+                         "Verify that we can actually set the attribute Target");
+
+  if (m_mode == QueueSizeUnit::BYTES)
+    {
+      modeSize = pktSize;
+    }
+  else if (m_mode == QueueSizeUnit::PACKETS)
+    {
+      modeSize = 1;
+    }
+  NS_TEST_EXPECT_MSG_EQ (queue->SetAttributeFailSafe ("MaxSize", QueueSizeValue (QueueSize (m_mode, modeSize * 1500))),
+                         true, "Verify that we can actually set the attribute MaxSize");
+  queue->Initialize ();
+
+  TcpHeader tcpHdr1;
+  uint8_t flags1 =TcpHeader::ACK|TcpHeader::ECE|TcpHeader::CWR;
+  tcpHdr1.SetFlags (flags1);
+  SequenceNumber32 num1 (1);
+  tcpHdr1.SetAckNumber (num1);
+  tcpHdr1.AppendOption(TcpOption::CreateOption(TcpOption::SACKPERMITTED));
+
+  TcpHeader tcpHdr2;
+  uint8_t flags2 =TcpHeader::ACK|TcpHeader::ECE|TcpHeader::CWR;
+  tcpHdr2.SetFlags (flags2);
+  SequenceNumber32 num2 (1501);
+  tcpHdr2.SetAckNumber (num2);
+
+  Ptr<Packet> p1, p2;
+  p1 = Create<Packet> (pktSize);
+  p1->AddHeader(tcpHdr1);
+  p2 = Create<Packet> (pktSize);
+  p2->AddHeader(tcpHdr2);
+
+
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 0 * modeSize, "There should be no packets in queue");
+  queue->Enqueue (Create<CobaltQueueDiscTestItem> (p1, dest,0, false));
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 1 * modeSize, "There should be one packet in queue");
+  queue->Enqueue (Create<CobaltQueueDiscTestItem> (p2, dest,0, false));
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 2 * modeSize, "There should be two packets in queue, the first packet was not dropped");
+  }
+
+
+  /**
    * This is Test Case 7 : Enqueue pkt with urg flag and then check if its being dropped
    * because of another ack of higher number.
    */
