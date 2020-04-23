@@ -31,6 +31,6 @@
 
 > Commands to Run:
 ```shell
-NS_LOG="FifoQueueDisc" ./waf --run "test-runner --suite=cobalt-queue-disc"
-NS_LOG="FifoQueueDisc" ./waf --run dumbbell
+NS_LOG="CobaltQueueDisc" ./waf --run "test-runner --suite=cobalt-queue-disc"
+NS_LOG="CobaltQueueDisc" ./waf --run dumbbell
 ```
