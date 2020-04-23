@@ -549,7 +549,7 @@ AckFilterUrgFlagTest::DoRun (void)
   uint8_t flags1 =TcpHeader::ACK|TcpHeader::URG;
   tcpHdr1.SetFlags (flags1);
   SequenceNumber32 num1 (1);
-  tcpHdr.SetAckNumber (num1);
+  tcpHdr1.SetAckNumber (num1);
 
   TcpHeader tcpHdr2;
   uint8_t flags2 =TcpHeader::ACK;
