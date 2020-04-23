@@ -766,6 +766,11 @@ public:
     AddTestCase (new CobaltQueueDiscDropTest (), TestCase::QUICK);
     // Test 3: Drop test
     AddTestCase (new CobaltBasicSynAckTest (PACKETS), TestCase::QUICK);
+    // Test 4:
+    AddTestCase (new AckFilterEceCwrFlagTest(PACKETS), TestCase::QUICK);
+    // Test 5:
+    AddTestCase (new AckFilterSackPermittedTest(PACKETS), TestCase::QUICK);
+
     AddTestCase (new AckFilterUdpEnqueueTest(PACKETS), TestCase::QUICK);
     AddTestCase (new AckFilterUrgFlagTest(PACKETS), TestCase::QUICK);
      
