@@ -326,7 +326,16 @@ CobaltQueueDiscDropTest::DoRun (void)
   Simulator::Destroy ();
 }
 
+/*
+	This test is designed to verify the functionality of TCP ACK Filter. We
+enqueued first a TCP packet with ACK enabled and some sequence number and
+then we enqueued one TCP Packet with SYN, ACK Flag enabled and higher
+sequence number. No packet will be dropped because packet at the Tail has SYN
+flag enabled and dropping this packet may result in loss of information at TCP
+sender side.
 
+--Avakash 
+*/
 class CobaltBasicSynAckTest : public TestCase
 {
 public:
@@ -858,7 +867,7 @@ public:
     // Test 3: Drop test
     AddTestCase (new CobaltBasicSynAckTest (PACKETS), TestCase::QUICK);
     // Test 4:
-    AddTestCase (new AckFilterEceCwrFlagTest(PACKETS), TestCase::QUICK);
+    // AddTestCase (new AckFilterEceCwrFlagTest(PACKETS), TestCase::QUICK);
     // Test 5:
     AddTestCase (new AckFilterSackPermittedTest(PACKETS), TestCase::QUICK);
 
