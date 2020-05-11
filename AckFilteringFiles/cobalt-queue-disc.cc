@@ -344,15 +344,8 @@ CobaltQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
   Ptr<Queue<QueueDiscItem>> queue = GetInternalQueue (0);
   AckFilter ack;
   bool retval = ack.AckFilterMain(queue, item);
-  // if(!retval){
   std::cout<< "Adding packet with sequence number " << item->GetAckSeqHeader() <<std::endl;
   retval = GetInternalQueue (0)->Enqueue (item);
-  //   retval = !retval;
-  // }else{
-  //   DropBeforeEnqueue(item, "Ack Filter");
-  // }
-  // If Queue::Enqueue fails, QueueDisc::Drop is called by the internal queue
-  // because QueueDisc::AddInternalQueue sets the drop callback
 
   NS_LOG_LOGIC ("Number packets " << GetInternalQueue (0)->GetNPackets ());
   NS_LOG_LOGIC ("Number bytes " << GetInternalQueue (0)->GetNBytes ());
