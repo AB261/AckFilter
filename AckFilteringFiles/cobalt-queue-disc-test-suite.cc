@@ -33,6 +33,7 @@
 #include "ns3/queue.h"
 #include "ns3/ipv4-queue-disc-item.h"
 
+
 using namespace ns3;
 /**
  * \ingroup traffic-control-test
@@ -846,7 +847,7 @@ AckFilterDropHeadTest::DoRun (void)
   queue->Initialize ();
 
   TcpHeader tcpHdr1;
-  tcpHdr1.SetFlags (TcpHeader::ACK);
+  tcpHdr1.SetFlags (TcpHeader::SYN);
   SequenceNumber32 num1 (1);
   tcpHdr1.SetAckNumber (num1);
   tcpHdr1.SetSourcePort(22);
@@ -871,20 +872,44 @@ AckFilterDropHeadTest::DoRun (void)
   tcpHdr3.SetSourcePort(22);
   tcpHdr3.SetDestinationPort(25);
 
+  TcpHeader tcpHdr4;
+  tcpHdr4.SetFlags (TcpHeader::ACK);
+  SequenceNumber32 num4 (1503);
+  tcpHdr4.SetAckNumber (num4);
+  tcpHdr4.SetSourcePort(22);
+  tcpHdr4.SetDestinationPort(25);
 
-  Ptr<Packet> p1, p2,p3;
+  TcpHeader tcpHdr5;
+  tcpHdr5.SetFlags (TcpHeader::FIN);
+  SequenceNumber32 num5 (1504);
+  tcpHdr5.SetAckNumber (num5);
+  tcpHdr5.SetSourcePort(22);
+  tcpHdr5.SetDestinationPort(25);
+
+
+  Ptr<Packet> p1, p2, p3, p4, p5;
   p1 = Create<Packet> (pktSize);
   p1->AddHeader(tcpHdr1);
   p2 = Create<Packet> (pktSize);
   p2->AddHeader(tcpHdr2);
   p3 = Create<Packet> (pktSize);
   p3->AddHeader(tcpHdr3);
+  p4 = Create<Packet> (pktSize);
+  p4->AddHeader(tcpHdr4);
+  p5 = Create<Packet> (pktSize);
+  p5->AddHeader(tcpHdr5);
 
   Ipv4Header hdr;
   hdr.SetPayloadSize (100);
   hdr.SetSource (Ipv4Address ("10.10.1.1"));
   hdr.SetDestination (Ipv4Address ("10.10.1.2"));
   hdr.SetProtocol (6);
+
+  Ipv4Header hdr1;
+  hdr1.SetPayloadSize (100);
+  hdr1.SetSource (Ipv4Address ("10.10.1.2"));
+  hdr1.SetDestination (Ipv4Address ("10.10.1.3"));
+  hdr1.SetProtocol (6);
 
   NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 0 * modeSize, "There should be no packets in queue");
   // queue->Enqueue (Create<CobaltQueueDiscTestItem> (p1, dest,0, false));
@@ -894,11 +919,23 @@ AckFilterDropHeadTest::DoRun (void)
   
   AddPacket (p2, queue, hdr);
   // queue->Enqueue (Create<CobaltQueueDiscTestItem> (p2, dest, 0, false));
-  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 1 * modeSize, "There should be one packet in queue, head packet was dropped");
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 2 * modeSize, "There should be two packet in queue");
 
-  Ptr<QueueDiscItem> item;
-  item = queue->Dequeue ();
-  NS_TEST_EXPECT_MSG_EQ ((item != 0), true, "I want to remove the first packet");
+  AddPacket (p3, queue, hdr1);
+  // queue->Enqueue (Create<CobaltQueueDiscTestItem> (p2, dest, 0, false));
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 3 * modeSize, "There should be three packet in queue");
+
+  AddPacket (p4, queue, hdr);
+  // queue->Enqueue (Create<CobaltQueueDiscTestItem> (p2, dest, 0, false));
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 3 * modeSize, "There should be three packet in queue, 2nd packet dropped");
+
+  AddPacket (p5, queue, hdr);
+  // queue->Enqueue (Create<CobaltQueueDiscTestItem> (p2, dest, 0, false));
+  NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 4 * modeSize, "There should be four packet in queue");
+
+  // Ptr<QueueDiscItem> item;
+  // item = queue->Dequeue ();
+  // NS_TEST_EXPECT_MSG_EQ ((item != 0), true, "I want to remove the first packet");
   // std::cout<<item->GetAckSeqHeader() << std::endl;
   // NS_TEST_EXPECT_MSG_EQ (item->GetAckSeqHeader(), num3, "was this the head packet ?");
 

@@ -335,15 +335,22 @@ CobaltQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
       NS_LOG_LOGIC ("Queue full -- dropping pkt");
       int64_t now = CoDelGetTime ();
       // Call this to update Blue's drop probability
-      CobaltQueueFull (now);
+      CobaltQueueFull (now); 
       DropBeforeEnqueue (item, OVERLIMIT_DROP);
       return false;
     }
 
-  bool retval = GetInternalQueue (0)->Enqueue (item);
+  // bool retval = GetInternalQueue (0)->Enqueue (item);
   Ptr<Queue<QueueDiscItem>> queue = GetInternalQueue (0);
   AckFilter ack;
-  ack.AckFilterMain(queue);
+  bool retval = ack.AckFilterMain(queue, item);
+  // if(!retval){
+  std::cout<< "Adding packet with sequence number " << item->GetAckSeqHeader() <<std::endl;
+  retval = GetInternalQueue (0)->Enqueue (item);
+  //   retval = !retval;
+  // }else{
+  //   DropBeforeEnqueue(item, "Ack Filter");
+  // }
   // If Queue::Enqueue fails, QueueDisc::Drop is called by the internal queue
   // because QueueDisc::AddInternalQueue sets the drop callback
 
