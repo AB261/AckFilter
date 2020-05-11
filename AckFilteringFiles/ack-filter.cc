@@ -7,6 +7,7 @@
 #include "ns3/tcp-header.h"
 #include "queue-disc.h"
 
+
 namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("AckFilter");
@@ -115,7 +116,7 @@ AckFilter::AckFilterMayDrop (Ptr<QueueDiscItem> item, uint32_t tstamp,uint32_t t
   // std::cout << " SACK " << item->HasTcpOption (TcpOption::SACKPERMITTED) << " WIN SCALE " << item->HasTcpOption (TcpOption::WINSCALE) <<  " UNKNOWN " << item->HasTcpOption (TcpOption::UNKNOWN) << std::endl;
   if (((((flags << 16) & uint32_t (0x0F3F0000)) >> 16) != TcpHeader::ACK) || item->HasTcpOption (TcpOption::SACKPERMITTED) || item->HasTcpOption (TcpOption::WINSCALE) || item->HasTcpOption (TcpOption::UNKNOWN))
     {
-      std::cout<<"TCP FLAGS NOT CORRECT\n";
+      // std::cout<<"TCP FLAGS NOT CORRECT\n";
       return false;
     }
   else if (item->HasTcpOption (TcpOption::TS))
@@ -124,7 +125,7 @@ AckFilter::AckFilterMayDrop (Ptr<QueueDiscItem> item, uint32_t tstamp,uint32_t t
       item->TcpGetTimestamp (tstamp_check,tsecr_check);
       if ((tstamp_check < tstamp) || (tsecr_check < tsecr))
         {
-          std::cout<<"TimeStamp not correct\n";
+          // std::cout<<"TimeStamp not correct\n";
           return false;
         }
       else
@@ -141,16 +142,24 @@ AckFilter::AckFilterMayDrop (Ptr<QueueDiscItem> item, uint32_t tstamp,uint32_t t
 bool
 AckFilter::AckFilterMain (Ptr<Queue<QueueDiscItem>> Qu, Ptr<QueueDiscItem> item) const
 {
+
   Ptr<Queue<QueueDiscItem> > queue =  Qu;
   bool hastimestamp;
   uint32_t tstamp, tsecr;
   Ipv4Address src1,src2,dst1,dst2;
+  Ipv4Header pk1 , pk2 ;
   Ptr<QueueDiscItem> elig_ack = NULL, elig_ack_prev= NULL;
   uint32_t elig_flags=0;
   int num_found=0;
+      // vector<int>::iterator ptr;
   // Ptr<QueueDiscItem> tail = *(--(queue->Tail ()));
   Ptr<QueueDiscItem> tail = item;
+  // pk1 = tail->GetHeader();
+  // src1 = pk1.GetSource();
+  // dst1 = pk1.GetDestination();
+
   Ptr<QueueDiscItem> head = *(queue->Head ());
+  auto pos = queue->Head();
   // std::cout<<"In AckFilterMain\n";
   // No other possible ACKs to filter
   // if (tail == head)
@@ -169,7 +178,7 @@ AckFilter::AckFilterMain (Ptr<Queue<QueueDiscItem>> Qu, Ptr<QueueDiscItem> item)
     {
       // std::cout<<tail->GetL4Protocol ()<<std::endl;
       // std::cout<<"Not L4Protocol\n";
-      std::cout<<"L4 Protocol is tail:" << tail->GetL4Protocol ()<<std::endl;
+      // std::cout<<"L4 Protocol is tail:" << tail->GetL4Protocol ()<<std::endl;
       return false;
     }
 
@@ -190,19 +199,28 @@ AckFilter::AckFilterMain (Ptr<Queue<QueueDiscItem>> Qu, Ptr<QueueDiscItem> item)
   //Triggered ack is at tail of the queue we have already returned if it is the only
   //packet in the flow. Loop through the rest of the queue looking for pure ack
   //with the same 5-tuple as the triggered one
+ 
   for (auto check = queue->Head (); check != queue->Tail (); prev = check,check++)
     {
+      std::cout << "Checked Packet " << ((*check)->TcpSourcePort ()) << std::endl;
+      std::cout << "Tail Packet " << (tail->TcpSourcePort ()) << std::endl;
+      tail->GetSourceL3address (src1);
+      std::cout << "Ip addr " <<  src1.Get()<<std::endl;
+      tail->GetSourceL3address (src2);
+      (*check)->GetDestL3address (dst1);
+      tail->GetDestL3address (dst2);
+      if(src1!=src2 || dst1!=dst2) {
+        std::cout << "IP Header different";
+        continue;
+      }
       if ((*check)->GetL4Protocol () != 6 || ((*check)->TcpSourcePort () != tail->TcpSourcePort ()) || ((*check)->TcpDestinationPort () != tail->TcpDestinationPort ()))
         {
-          std::cout<<"Removing ack here";
-          (*check)->GetSourceL3address (src1);
-          tail->GetSourceL3address (src2);
-          (*check)->GetDestL3address (dst1);
-          tail->GetDestL3address (dst2);
+          std::cout<<"TCP Header different";
+
           continue;
         }
 
-      std::cout<<"Working till here"<<std::endl;
+      // std::cout<<"Working till here"<<std::endl;
       Ptr<QueueDiscItem> item = *check;
       // SequenceNumber32 abc = (*check)->GetAckSeqHeader ();
       // std::cout << abc;
@@ -246,10 +264,10 @@ int sack_comp = AckFilterSackCompare(*check, tail);
    * again.
    */
   if (!elig_ack) {
-
+   pos = check;
    elig_ack = *check;
    elig_ack_prev = *prev;
-   std::cout<<"Found Eligible Ack: " << elig_ack->GetAckSeqHeader() << " Eligible Ack Prev: "<< elig_ack_prev->GetAckSeqHeader() << std::endl;
+  //  std::cout<<"Found Eligible Ack: " << elig_ack->GetAckSeqHeader() << " Eligible Ack Prev: "<< elig_ack_prev->GetAckSeqHeader() << std::endl;
    uint8_t flag_check;
       (*check)->GetUint8Value (QueueItem::TCP_FLAGS,flag_check);
       elig_flags = (flag_check & (TcpHeader::ECE | TcpHeader::CWR));
@@ -258,7 +276,7 @@ int sack_comp = AckFilterSackCompare(*check, tail);
 
   if (num_found++ > 0)
   {
-  std::cout<<"Ready to remove\n";
+  // std::cout<<"Ready to remove\n";
    goto found;
   }
  }
@@ -274,7 +292,7 @@ int sack_comp = AckFilterSackCompare(*check, tail);
       
   if (elig_ack && (elig_flags == (flag_tail & (TcpHeader::ECE | TcpHeader::CWR))))
   {
-     std::cout<<"Ready to remove 2:: Go to found \n";
+    //  std::cout<<"Ready to remove 2:: Go to found \n";
      goto found;
   }
 
@@ -282,11 +300,14 @@ int sack_comp = AckFilterSackCompare(*check, tail);
 
 found:
  if (elig_ack_prev){
-   std::cout<<"Removed\nDropping packet\n";
-    std::cout<<"Removing Eligible Ack: " << elig_ack->GetAckSeqHeader() << " Eligible Ack Prev: "<< tail->GetAckSeqHeader() << std::endl;
+  //  std::cout<<"Removed\nDropping packet\n";
+    // std::cout<<"Removing Eligible Ack: " << elig_ack->GetAckSeqHeader() << " Eligible Ack Prev: "<< tail->GetAckSeqHeader() << std::endl;
   //  elig_ack_prev = elig_ack;
-   elig_ack = tail;
-   std::cout<<"elig_ack: " << elig_ack->GetAckSeqHeader() << std::endl;
+  //  elig_ack = tail;
+  queue->DoRemove(pos);
+  
+
+   std::cout<<"Removing packet with sequence number " << elig_ack->GetAckSeqHeader() << std::endl;
    return true;
     //  Ptr<QueueDiscItem> temp = elig_ack_prev;
  }
