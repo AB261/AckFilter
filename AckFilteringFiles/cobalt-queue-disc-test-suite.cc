@@ -853,17 +853,12 @@ AckFilterDropHeadTest::DoRun (void)
   tcpHdr1.SetSourcePort(22);
   tcpHdr1.SetDestinationPort(25);
 
-  
-
   TcpHeader tcpHdr2;
   tcpHdr2.SetFlags (TcpHeader::ACK);
   SequenceNumber32 num2 (1501);
   tcpHdr2.SetAckNumber (num2);
   tcpHdr2.SetSourcePort(22);
   tcpHdr2.SetDestinationPort(25);
-
-  // std::cout << "get hdr2 flag " << tcpHdr2.GetFlags() << std::endl; /
-
 
   TcpHeader tcpHdr3;
   tcpHdr3.SetFlags (TcpHeader::ACK);
@@ -933,17 +928,6 @@ AckFilterDropHeadTest::DoRun (void)
   // queue->Enqueue (Create<CobaltQueueDiscTestItem> (p2, dest, 0, false));
   NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 4 * modeSize, "There should be four packet in queue");
 
-  // Ptr<QueueDiscItem> item;
-  // item = queue->Dequeue ();
-  // NS_TEST_EXPECT_MSG_EQ ((item != 0), true, "I want to remove the first packet");
-  // std::cout<<item->GetAckSeqHeader() << std::endl;
-  // NS_TEST_EXPECT_MSG_EQ (item->GetAckSeqHeader(), num3, "was this the head packet ?");
-
-  
-  
-  // queue->Enqueue (Create<CobaltQueueDiscTestItem> (p3, dest,0, false));
-  // AddPacket (p3, queue, hdr);
-  // NS_TEST_EXPECT_MSG_EQ (queue->GetCurrentSize ().GetValue (), 2 * modeSize, "There should be one packet in queue, head packet was dropped");
  }
 
 static class CobaltQueueDiscTestSuite : public TestSuite
