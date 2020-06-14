@@ -75,6 +75,11 @@ TypeId CobaltQueueDisc::GetTypeId (void)
                    BooleanValue (false),
                    MakeBooleanAccessor (&CobaltQueueDisc::m_useEcn),
                    MakeBooleanChecker ())
+    .AddAttribute ("UseAckFilter",
+                   "True to use Ack Filter (Drops Acks that ack less than current ack)",
+                   BooleanValue (false),
+                   MakeBooleanAccessor (&CobaltQueueDisc::m_useAckFilter),
+                   MakeBooleanChecker ())
     .AddAttribute ("Pdrop",
                    "Marking Probability",
                    DoubleValue (0),
@@ -342,11 +347,16 @@ CobaltQueueDisc::DoEnqueue (Ptr<QueueDiscItem> item)
 
   // bool retval = GetInternalQueue (0)->Enqueue (item);
   Ptr<Queue<QueueDiscItem>> queue = GetInternalQueue (0);
-  AckFilter ack;
-  bool retval = ack.AckFilterMain(queue, item);
-  // if(!retval){
-  std::cout<< "Adding packet with sequence number " << item->GetAckSeqHeader() <<std::endl;
+  bool retval;
+  if(m_useAckFilter){
+    AckFilter ack;
+    retval = ack.AckFilterMain(queue, item);
+  }
   retval = GetInternalQueue (0)->Enqueue (item);
+ 
+  // if(!retval){
+  // std::cout<< "Adding packet with sequence number " << item->GetAckSeqHeader() <<std::endl;
+  
   //   retval = !retval;
   // }else{
   //   DropBeforeEnqueue(item, "Ack Filter");

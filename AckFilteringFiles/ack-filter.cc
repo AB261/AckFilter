@@ -202,20 +202,20 @@ AckFilter::AckFilterMain (Ptr<Queue<QueueDiscItem>> Qu, Ptr<QueueDiscItem> item)
  
   for (auto check = queue->Head (); check != queue->Tail (); prev = check,check++)
     {
-      std::cout << "Checked Packet " << ((*check)->TcpSourcePort ()) << std::endl;
-      std::cout << "Tail Packet " << (tail->TcpSourcePort ()) << std::endl;
+      // std::cout << "Checked Packet " << ((*check)->TcpSourcePort ()) << std::endl;
+      // std::cout << "Tail Packet " << (tail->TcpSourcePort ()) << std::endl;
       tail->GetSourceL3address (src1);
-      std::cout << "Ip addr " <<  src1.Get()<<std::endl;
+      // std::cout << "Ip addr " <<  src1.Get()<<std::endl;
       tail->GetSourceL3address (src2);
       (*check)->GetDestL3address (dst1);
       tail->GetDestL3address (dst2);
       if(src1!=src2 || dst1!=dst2) {
-        std::cout << "IP Header different";
+        // std::cout << "IP Header different";
         continue;
       }
       if ((*check)->GetL4Protocol () != 6 || ((*check)->TcpSourcePort () != tail->TcpSourcePort ()) || ((*check)->TcpDestinationPort () != tail->TcpDestinationPort ()))
         {
-          std::cout<<"TCP Header different";
+          // std::cout<<"TCP Header different";
 
           continue;
         }
@@ -304,10 +304,11 @@ found:
     // std::cout<<"Removing Eligible Ack: " << elig_ack->GetAckSeqHeader() << " Eligible Ack Prev: "<< tail->GetAckSeqHeader() << std::endl;
   //  elig_ack_prev = elig_ack;
   //  elig_ack = tail;
+  std::cout <<"Getting removed";
   queue->DoRemove(pos);
   
 
-   std::cout<<"Removing packet with sequence number " << elig_ack->GetAckSeqHeader() << std::endl;
+  //  std::cout<<"Removing packet with sequence number " << elig_ack->GetAckSeqHeader() << std::endl;
    return true;
     //  Ptr<QueueDiscItem> temp = elig_ack_prev;
  }

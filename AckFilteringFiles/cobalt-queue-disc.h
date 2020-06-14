@@ -229,6 +229,7 @@ private:
   Time m_interval;                        //!< 100 ms sliding minimum time window width
   Time m_target;                          //!< 5 ms target queue delay
   bool m_useEcn;                          //!< True if ECN is used (packets are marked instead of being dropped)
+  bool m_useAckFilter;                    //!< True if Ack filter should be used 
 
   // Blue parameters
   // Maintained by Cobalt
@@ -239,6 +240,7 @@ private:
   double m_increment;                     //!< increment value for marking probability
   double m_decrement;                     //!< decrement value for marking probability
   double m_Pdrop;                         //!< Drop Probability
+
 
 };
 
