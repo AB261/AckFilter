@@ -16,11 +16,10 @@
 
 // Network topology
 //
-//s --- r1 --- r2 --- c
+//       s --- r1 --- r2 --- c
+//           
 //
-// - Flow from n0 to n1 using BulkSendApplication.
-// - Tracing of queues and packet receptions to file "tcp-bulk-send.tr"
-//   and pcap tracing available when tracing is turned on.
+//
 
 #include <string>
 #include <fstream>
@@ -41,7 +40,7 @@ main (int argc, char *argv[])
 {
 
   bool tracing = true;
-  uint32_t maxBytes = 0;
+  uint32_t maxBytes = 181000;
   NS_LOG_INFO ("Create nodes.");
   NodeContainer nodes;
   nodes.Create (4);
@@ -86,7 +85,7 @@ main (int argc, char *argv[])
 
 
   TrafficControlHelper tchRed;
-  tchRed.SetRootQueueDisc ("ns3::CobaltQueueDisc","UseAckFilter",BooleanValue (false));
+  tchRed.SetRootQueueDisc ("ns3::CobaltQueueDisc","UseAckFilter",BooleanValue (true));
   QueueDiscContainer queueDiscs;
   queueDiscs = tchRed.Install (r1_r2_dev);
 
@@ -175,11 +174,74 @@ main (int argc, char *argv[])
   sinkApps4.Start (Seconds (0.0));
   sinkApps4.Stop (Seconds (3.0));
 
+  //Upload connections
+  port = 60004;
+      BulkSendHelper source5 ("ns3::TcpSocketFactory",
+                         InetSocketAddress (s_r1_interface.GetAddress (0), port));
+  // Set the amount of data to send in bytes.  Zero is unlimited.
+  source5.SetAttribute ("MaxBytes", UintegerValue (maxBytes));
+  ApplicationContainer sourceApps5 = source5.Install (nodes.Get (3));
+  sourceApps5.Start (Seconds (0.0));
+  sourceApps5.Stop (Seconds (3.0));
+
+  PacketSinkHelper sink5 ("ns3::TcpSocketFactory",
+                         InetSocketAddress (Ipv4Address::GetAny (), port));
+  ApplicationContainer sinkApps5 = sink5.Install (nodes.Get (0));
+  sinkApps5.Start (Seconds (0.0));
+  sinkApps5.Stop (Seconds (3.0));
+
+    port = 60005;
+      BulkSendHelper source6 ("ns3::TcpSocketFactory",
+                         InetSocketAddress (s_r1_interface.GetAddress (0), port));
+  // Set the amount of data to send in bytes.  Zero is unlimited.
+  source5.SetAttribute ("MaxBytes", UintegerValue (maxBytes));
+  ApplicationContainer sourceApps6 = source6.Install (nodes.Get (3));
+  sourceApps6.Start (Seconds (0.0));
+  sourceApps6.Stop (Seconds (3.0));
+
+  PacketSinkHelper sink6 ("ns3::TcpSocketFactory",
+                         InetSocketAddress (Ipv4Address::GetAny (), port));
+  ApplicationContainer sinkApps6 = sink6.Install (nodes.Get (0));
+  sinkApps6.Start (Seconds (0.0));
+  sinkApps6.Stop (Seconds (3.0));
+
+    port = 60006;
+      BulkSendHelper source7 ("ns3::TcpSocketFactory",
+                         InetSocketAddress (s_r1_interface.GetAddress (0), port));
+  // Set the amount of data to send in bytes.  Zero is unlimited.
+  source7.SetAttribute ("MaxBytes", UintegerValue (maxBytes));
+  ApplicationContainer sourceApps7 = source7.Install (nodes.Get (3));
+  sourceApps7.Start (Seconds (0.0));
+  sourceApps7.Stop (Seconds (3.0));
+
+  PacketSinkHelper sink7 ("ns3::TcpSocketFactory",
+                         InetSocketAddress (Ipv4Address::GetAny (), port));
+  ApplicationContainer sinkApps7 = sink7.Install (nodes.Get (0));
+  sinkApps7.Start (Seconds (0.0));
+  sinkApps7.Stop (Seconds (3.0));
+
+
+    port = 60007;
+      BulkSendHelper source8 ("ns3::TcpSocketFactory",
+                         InetSocketAddress (s_r1_interface.GetAddress (0), port));
+  // Set the amount of data to send in bytes.  Zero is unlimited.
+  source8.SetAttribute ("MaxBytes", UintegerValue (maxBytes));
+  ApplicationContainer sourceApps8 = source8.Install (nodes.Get (3));
+  sourceApps8.Start (Seconds (0.0));
+  sourceApps8.Stop (Seconds (3.0));
+
+  PacketSinkHelper sink8 ("ns3::TcpSocketFactory",
+                         InetSocketAddress (Ipv4Address::GetAny (), port));
+  ApplicationContainer sinkApps8 = sink8.Install (nodes.Get (0));
+  sinkApps8.Start (Seconds (0.0));
+  sinkApps8.Stop (Seconds (3.0));
+
+
   if (tracing)
     {
       AsciiTraceHelper ascii;
-      p2p.EnableAsciiAll (ascii.CreateFileStream ("tcp-bulk-send_without.tr"));
-      p2p.EnablePcapAll ("tcp-bulk-send_without", false);
+      p2p.EnableAsciiAll (ascii.CreateFileStream ("tcp-bulk-send_with_ack.tr"));
+      p2p.EnablePcapAll ("tcp-bulk-send_with", false);
     }
   NS_LOG_INFO ("Run Simulation.");
   Simulator::Stop (Seconds (5));
@@ -187,6 +249,9 @@ main (int argc, char *argv[])
   Simulator::Destroy ();
   NS_LOG_INFO ("Done.");
 
-  Ptr<PacketSink> sink5 = DynamicCast<PacketSink> (sinkApps1.Get (0));
-  std::cout << "Total Bytes Received: " << sink5->GetTotalRx () << std::endl;
+  Ptr<PacketSink> sink9 = DynamicCast<PacketSink> (sinkApps8.Get (0));
+  std::cout << "Total Bytes downloaded: " << sink9->GetTotalRx () << std::endl;
+
+    Ptr<PacketSink> sink10 = DynamicCast<PacketSink> (sinkApps1.Get (0));
+  std::cout << "Total Bytes uploaded: " << sink10->GetTotalRx () << std::endl;
 }
